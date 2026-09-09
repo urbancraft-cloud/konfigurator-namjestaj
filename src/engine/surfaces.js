@@ -1,5 +1,6 @@
 // src/engine/surfaces.js
 
+import { CONTIGUITY_TOL_MM } from '../config/constants';
 import { WALLS, WORKTOP, WALLPANEL, SOCLE, TOPMASK, LEDMASK, ENDPANEL, CORNER_WALL, CORPUS_BASE_H } from '../data/tech';
 import { templateById } from '../data/catalog';
 import {
@@ -7,7 +8,7 @@ import {
   overlaps, elementAABB, wallTopOf, wallElevationOf,
 } from './geometry';
 
-const CONTIGUITY_TOL = 2;
+const CONTIGUITY_TOL = CONTIGUITY_TOL_MM;
 
 /** Niz = maksimalna grupa susjednih donjih elemenata na istom zidu. */
 export function detectRuns(project, pred, splitByDepth) {

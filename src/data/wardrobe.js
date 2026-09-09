@@ -10,6 +10,8 @@
 // pa su sve veličine ovdje, a ne u engine-u — da se mogu mijenjati na jednom
 // mjestu i da ih UI može prikazati i urediti.
 
+import { HINGE_HEIGHT_THRESHOLD_MM } from '../config/constants';
+
 /* ---------------------------------------------------------------------------
    Debljine materijala
 --------------------------------------------------------------------------- */
@@ -73,7 +75,7 @@ export const DOOR_REVEAL_PER_SIDE_MM = 2;
 export const DOOR_GAP_BETWEEN_MM = 4;
 
 /** Iznad ove visine krila idu 4 šarke, ispod 2 — isto pravilo kao u kuhinji. */
-export const HINGES_4_ABOVE_MM = 1200;
+export const HINGES_4_ABOVE_MM = HINGE_HEIGHT_THRESHOLD_MM;
 export const HINGES_PER_LEAF_LOW = 2;
 export const HINGES_PER_LEAF_HIGH = 4;
 

@@ -1,5 +1,6 @@
 // src/engine/pricing.js
 
+import { HINGE_HEIGHT_THRESHOLD_MM } from '../config/constants';
 import { HARDWARE, RUNNER_SYSTEMS, HANDLES, CORNER_MECHANISMS } from '../data/hardware';
 import { LEG_HEIGHTS } from '../data/tech';
 import { KITCHEN_LEGS_PER_CORPUS, GOLA_METERS_PER_FRONT } from '../data/wardrobe';
@@ -63,7 +64,7 @@ export function computeHardware(el, project) {
   const H = HANDLES[el.handleId] || HANDLES.RUCKA_160;
   const addHandle = (n) => { if (n > 0) out.push({ id: H.id, name: H.name, price: H.price, unit: 'kom', qty: n }); };
   const hingeId = el.isGlassDoor ? 'SARKA_ST' : 'SARKA';
-  const hingesPerLeaf = el.dims.height > 1200 ? 4 : 2;
+  const hingesPerLeaf = el.dims.height > HINGE_HEIGHT_THRESHOLD_MM ? 4 : 2;
 
   /* Broj fronti: ili iz eksplicitnog stoga (ladice + vrata), ili — kad element
      nema definisan frontStack — iz automatskog rasporeda fronti. */
