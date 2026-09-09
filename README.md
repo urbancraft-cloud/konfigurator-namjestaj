@@ -269,3 +269,4 @@ kuhinjskog modula (`reveals`, `hingesPerLeaf`, `RUNNER_SYSTEMS`,
 - **`FAZA-6-IZVJESTAJ.md`** — Faza 6: obračun po potrošenim pločama (pravilo pola
   ploče), format medijapana 2800×1220, automatsko čuvanje nacrta, CI
 - **`IZVJESTAJ-dokazi.txt`** — sirovi dokazi iz originalne analize
+"# konfigurator-namjestaj" 
