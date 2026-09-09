@@ -1,0 +1,107 @@
+======================================================================
+DOKAZ 1 — applyFrontDecor: thicknessesOf NIJE importovan (CRASH)
+======================================================================
+  koristi thicknessesOf(): true
+  importuje thicknessesOf: false
+  import linija: import { DECORS, registerDecor } from '../data/decors';
+  => Klik na "Sve fronte donjih elemenata" u LeftRail baca ReferenceError.
+  => Nema ErrorBoundary-ja => CIJELA aplikacija postaje bijeli ekran.
+
+======================================================================
+DOKAZ 2 — createInstance: dupli instanceId
+======================================================================
+  a.instanceId = el_D-VRATA
+  b.instanceId = el_D-VRATA
+  IZUZETNO opasno jer projectStore.patch(id) i removeElement(id) idu po instanceId
+  => map() mijenja OBA elementa, filter() briše OBA.
+
+======================================================================
+DOKAZ 3 — _seq modul-brojac: dupli ID nakon reload-a
+======================================================================
+  Scenario: korisnik sacuva projekat (el_1..el_14), osvjezi stranicu,
+  ucita projekat iz localStorage, pa doda novi element.
+  ID-jevi u ucitanom projektu: el_1, el_2, el_3, el_14
+  Nakon reload-a `let _seq = 0` u catalog.js => prvi novi element = el_1
+  => KOLIZIJA. Dokaz u kodu: catalog.js linija 71-76, _seq je modul-lokalan,
+     nigdje se ne sinhronizuje sa ucitanim projektom (loadProject/loadProjectByName).
+  loadProjectByName postavlja rawProject direktno, bez reseeda _seq: true
+
+======================================================================
+DOKAZ 4 — GOLA profil se naplacuje kao 1 komad (treba po duznom metru)
+======================================================================
+  sirina 400 mm -> GOLA_C qty=1 x 14 KM = 14.00 KM
+  sirina 900 mm -> GOLA_C qty=2 x 14 KM = 28.00 KM
+  => Isti iznos (14 KM) za 400 mm i za 900 mm element. Gola profil je metraza.
+  => Za kuhinju od 20 elemenata greska je ~266 KM u ponudi.
+
+======================================================================
+DOKAZ 5 — NOGICA: 4/6 kom po elementu, bez veze sa legHeightMm
+======================================================================
+  element 1200 mm -> [{"id":"NOGICA","name":"Nogica podesiva 100 mm","price":1.2,"unit":"kom","qty":6}]
+  computeHardware(el) NE prima project => ne moze znati legHeightMm.
+  Za 14 elemenata to je 56+ nogica u krojnoj listi, iako realno ide ~2 po elementu
+  (nogice se postavljaju po liniji, ne po svakom elementu ponaosob).
+
+======================================================================
+DOKAZ 6 — završne maske za VISOKE elemente: bez provjere izloženosti
+======================================================================
+  frižider na offset 0 (LIJEVI ugao prostorije, start strana je uz zid)
+  generisano tall maski: 2 -> start 2600x550, end 2600x550
+  => "start" maska je uz sam zid (offset 0) gdje fizicki ne moze stati.
+  => Base/wall maske prolaze kroz endExposed() provjeru, tall NE (surfaces.js 415-439).
+
+======================================================================
+DOKAZ 7 — validateElement / BOM pucaju na nepoznatom templateId ili dekoru
+======================================================================
+  validateElement CRASH: Cannot read properties of undefined (reading 'dims')
+  computeBOM CRASH: Cannot read properties of undefined (reading 'grain')
+  computePrice CRASH: Cannot read properties of undefined (reading 'grain')
+  => Bilo koji stari sacuvani projekat sa elementom/dekorom koji je izbacen iz
+     kataloga => bijeli ekran pri ucitavanju, bez ikakve poruke.
+
+======================================================================
+DOKAZ 8 — surfaces.js: cooktopCenter koristi COOKTOP koji NIJE importovan
+======================================================================
+  COOKTOP se koristi: 3x
+  COOKTOP u import listi: false
+  poziv CRASH: ReferenceError: COOKTOP is not defined
+  => Trenutno je mrtav kod (niko ga ne zove), ali je tempirana bomba.
+
+======================================================================
+DOKAZ 9 — ORMAR: cijena ploca vrha/dna NE raste sa brojem segmenata
+======================================================================
+  2 segmenta: cijena korpusa = 570.37 KM
+     BOM ploci: Gornja ploča — DONJI (spoj sa gornjim korpusom) k1 2400x580 | Donja ploča — DONJI k1 2400x580 | Gornja ploča — GORNJI k1 2400x580 | Donja ploča — GORNJI (spoj sa donjim korpusom) k1 2400x580
+  3 segmenta: cijena korpusa = 649.88 KM
+     BOM ploci: Gornja ploča — DONJI (spoj sa gornjim korpusom) k1 2400x580 | Donja ploča — DONJI k1 2400x580 | Gornja ploča — GORNJI k1 2400x580 | Donja ploča — GORNJI (spoj sa donjim korpusom) k1 2400x580
+  4 segmenta: cijena korpusa = 729.38 KM
+     BOM ploci: Gornja ploča — DONJI (spoj sa gornjim korpusom) k1 2400x580 | Donja ploča — DONJI k1 2400x580 | Gornja ploča — GORNJI k1 2400x580 | Donja ploča — GORNJI (spoj sa donjim korpusom) k1 2400x580
+  => U cijeni su ploce vrha/dna uračunate kao 2 x (sirina x dubina) UKUPNO,
+     a konstrukcija je n odvojenih korpusa => treba n x 4 ploce. Za 4 segmenta
+     falice 8 ploca (2400x580) u cijeni i u krojnoj listi.
+
+======================================================================
+DOKAZ 10 — ORMAR: klizna vrata uvijek 2 krila, bez veze sa sirinom
+======================================================================
+  sirina 1200 mm -> Klizno krilo vrata k2 640x2300
+  sirina 2400 mm -> Klizno krilo vrata k2 1240x2300
+  sirina 4000 mm -> Klizno krilo vrata k2 2040x2300
+  => Za 4000 mm ormar daje 2 krila po 2040 mm — to je nemoguce za klizna vrata
+     (standard je 3-4 krila, max ~1200 mm po krilu).
+
+======================================================================
+DOKAZ 11 — ORMAR: BOM redovi sa sirinom 0 mm
+======================================================================
+  "Šipka S1 (donji)" -> 776 x 0 mm  (qty 1)
+  "Nogice (podesive)" -> 100 x 0 mm  (qty 8)
+  => Redovi sirene 0 mm se u tabeli prikazuju kao "—" (WardrobeBomModal 39-40).
+
+======================================================================
+DOKAZ 12 — PERFORMANSE: computePanels se zove 2x po elementu u 3D
+======================================================================
+  computePanels(el) poziva u furniture efektu: 2
+  (projekt BEZ worktopDecorId/socleDecorId => computeBOM baca TypeError:
+   "Cannot read properties of undefined (reading name)" u pushSurface —
+   desava se kod svakog starijeg sacuvanog projekta, bez ikakve poruke.)
+  200x computeBOM za 14 elemenata: 4.359443405 ms po pozivu
+  => Ovo se izvrsava na SVAKI pointermove tokom prevlacenja elementa.

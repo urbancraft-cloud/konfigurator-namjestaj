@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------------------------
+   Vidljiv fokus za navigaciju tastaturom.
+
+   Svi `<Btn>`, `<Segmented>` i `<Select>` koriste inline `style`, pa `:hover` i
+   `:focus` ne mogu biti inline — bez ovoga korisnik koji ide Tab-om kroz
+   aplikaciju uopšte ne vidi gdje se nalazi, što je WCAG 2.4.7 (Focus Visible)
+   neuspjeh na A nivou.
+--------------------------------------------------------------------------- */
+:focus-visible {
+  outline: 2px solid #0D9488;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #0D9488;
+  outline-offset: 2px;
+}
+
+/* Poštuj korisnikovu postavku „smanji animacije" */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}

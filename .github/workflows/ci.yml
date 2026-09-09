@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  provjera:
+    name: Lint, testovi i build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # `no-undef` je uključen kao GREŠKA namjerno: Vite/rolldown ne provjerava
+      # nedefinisane identifikatore, pa build prođe a aplikacija padne u browseru.
+      # Tokom razvoja je ovo pravilo uhvatilo dva stvarna pada.
+      - name: Lint
+        run: npm run lint
+
+      # Uključuje zlatnu regresiju cijena (golden.test.js) — svaka slučajna
+      # promjena kalkulacije pada ovdje.
+      - name: Testovi
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Sačuvaj build artefakt
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
