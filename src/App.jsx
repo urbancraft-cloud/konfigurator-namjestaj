@@ -1,6 +1,5 @@
 // src/App.jsx
 import React, { useMemo, useEffect, useState, lazy, Suspense } from 'react';
-import { Eye, EyeOff, Footprints, Ruler, Wand2, Trash2 } from 'lucide-react';
 import { C, mono, card } from './data/theme';
 import { resolveProject } from './engine/layout';
 import { projectTotals, surfacesCost, projectTotalsBySheets } from './engine/pricing';
@@ -16,15 +15,17 @@ import { StartupWizard } from './components/app/StartupWizard';
 import { DecorModal } from './components/app/DecorModal';
 import { BomModal } from './components/app/BomModal';
 import { OfferModal } from './components/app/OfferModal';
-import { Btn, Segmented } from './components/ui/Controls';
+import { ShortcutsModal } from './components/app/ShortcutsModal';
 
-import { useProjectStore } from './store/projectStore';
-import { useUiStore } from './store/uiStore';
+import { useProjectSelectors } from './hooks/useProjectSelectors';
+import { useUiSelectors } from './hooks/useUiSelectors';
 import { useIsNarrow } from './hooks/useViewport';
 import { useWardrobeStore } from './store/wardrobeStore';
-import { SaveAsModal } from './components/app/SaveAsModal';
-import { ShortcutsModal } from './components/app/ShortcutsModal';
-import { LoadProjectModal } from './components/app/LoadProjectModal';
+
+import { ViewportControls, ViewportInfo, MeasurePanel, SurfacesPanel } from './components/viewport/ViewportControls';
+import { ModalsGroup } from './components/modals/ModalsGroup';
+import { SaveAsModal } from './components/modals/SaveAsModal';
+import { LoadProjectModal } from './components/modals/LoadProjectModal';
 
 /* PERF-07: Three.js (~600 kB) se ranije učitavao odmah, pa i korisniku koji
    gleda samo tlocrt ili radi u modu za ormar. Oba 3D prikaza se sada učitavaju
@@ -44,49 +45,20 @@ function ViewportPlaceholder() {
 }
 
 export default function App() {
-  const room = useProjectStore((s) => s.room);
-  const rawProject = useProjectStore((s) => s.rawProject);
-  const decorVersion = useProjectStore((s) => s.decorVersion);
-  const bumpDecorVersion = useProjectStore((s) => s.bumpDecorVersion);
-  const saveDecors = useProjectStore((s) => s.saveDecors);
-  const loadDecors = useProjectStore((s) => s.loadDecors);
-  const removeElement = useProjectStore((s) => s.removeElement);
-  const dragElement = useProjectStore((s) => s.dragElement);
-  const moveCooktop = useProjectStore((s) => s.moveCooktop);
-  const applyWizard = useProjectStore((s) => s.applyWizard);
-  const placeService = useProjectStore((s) => s.placeService);
-  const setRawProject = useProjectStore((s) => s.setRawProject);
-  const undo = useProjectStore((s) => s.undo);
-  const redo = useProjectStore((s) => s.redo);
-  const saveDraft = useProjectStore((s) => s.saveDraft);
-  const [draftSavedAt, setDraftSavedAt] = useState(null);
+  // Jedna pretplata za sve projektne podatke (umjesto 15+ zasebnih)
+  const projectSelectors = useProjectSelectors();
+  const { room, rawProject, decorVersion, bumpDecorVersion, saveDecors, loadDecors, 
+          removeElement, dragElement, moveCooktop, applyWizard, placeService, 
+          setRawProject, undo, redo, saveDraft } = projectSelectors;
 
-  const view = useUiStore((s) => s.view);
-  const setView = useUiStore((s) => s.setView);
-  const tool = useUiStore((s) => s.tool);
-  const setTool = useUiStore((s) => s.setTool);
-  const wizard = useUiStore((s) => s.wizard);
-  const setWizard = useUiStore((s) => s.setWizard);
-  const appMode = useUiStore((s) => s.appMode);
-  const setAppMode = useUiStore((s) => s.setAppMode);
-  const showFronts = useUiStore((s) => s.showFronts);
-  const toggleShowFronts = useUiStore((s) => s.toggleShowFronts);
-  const walk = useUiStore((s) => s.walk);
-  const setWalk = useUiStore((s) => s.setWalk);
-  const measure = useUiStore((s) => s.measure);
-  const setMeasure = useUiStore((s) => s.setMeasure);
-  const measured = useUiStore((s) => s.measured);
-  const setMeasured = useUiStore((s) => s.setMeasured);
-  const selectedId = useUiStore((s) => s.selectedId);
-  const setSelectedId = useUiStore((s) => s.setSelectedId);
-  const modal = useUiStore((s) => s.modal);
-  const setModal = useUiStore((s) => s.setModal);
-  const toastSeq = useUiStore((s) => s.toastSeq);
-  const toast = useUiStore((s) => s.toast);
-  const flash = useUiStore((s) => s.flash);
-  const setPendingAdd = useUiStore((s) => s.setPendingAdd);
-  const panelsOpen = useUiStore((s) => s.panelsOpen);
-  const setPanelsOpen = useUiStore((s) => s.setPanelsOpen);
+  // Jedna pretplata za sve UI state (umjesto 25+ zasebnih)
+  const uiSelectors = useUiSelectors();
+  const { view, setView, tool, setTool, wizard, setWizard, appMode, setAppMode,
+          showFronts, toggleShowFronts, walk, setWalk, measure, setMeasure,
+          measured, setMeasured, selectedId, setSelectedId, modal, setModal,
+          toastSeq, toast, flash, setPendingAdd, panelsOpen, setPanelsOpen } = uiSelectors;
+
+  const [draftSavedAt, setDraftSavedAt] = useState(null);
 
   /* Na uskom ekranu bočni paneli postaju izvlačeće ladice — inače bi
      LeftRail (288 px) + RightRail (320 px) + viewport zauzeli više od širine
@@ -243,58 +215,21 @@ useEffect(() => {
 
             {/* ---------- Viewport ---------- */}
             <main className="flex-1 relative min-w-0 overflow-hidden" style={{ ...card, borderRadius: 16 }}>
-              <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
-                <Segmented value={view} onChange={setView}
-                  options={[{ value: '2d', label: 'Tlocrt' }, { value: '3d', label: '3D prikaz' }]} />
-                <Segmented value={tool} onChange={(v) => { setTool(v); if (v !== 'select') setView('2d'); }}
-                  options={[{ value: 'select', label: 'Odabir' }, { value: 'voda', label: 'Voda' }, { value: 'struja', label: 'Struja' }]} />
-                <Btn size="sm" variant={showFronts ? 'ghost' : 'dark'} onClick={toggleShowFronts}>
-                  {showFronts ? <EyeOff size={13} /> : <Eye size={13} />} {showFronts ? 'Sakrij fronte' : 'Prikaži fronte'}
-                </Btn>
-                <Btn size="sm" variant={walk ? 'primary' : 'ghost'}
-                  onClick={() => { setView('3d'); setWalk(!walk); }}>
-                  <Footprints size={13} /> {walk ? 'Izađi (H)' : 'Hodanje (H)'}
-                </Btn>
-                <Btn size="sm" variant={measure ? 'primary' : 'ghost'}
-                  onClick={() => { setView('3d'); setMeasured(null); setMeasure(!measure); }}>
-                  <Ruler size={13} /> {measure ? 'Metar aktivan (T)' : 'Metar (T)'}
-                </Btn>
-                <Btn size="sm" onClick={() => setWizard(true)}><Wand2 size={13} /> Novi projekat</Btn>
-                <Btn size="sm" onClick={() => { setRawProject((p) => ({ ...p, elements: [], services: [] })); setSelectedId(null); setTool('select'); flash('Prostor očišćen.'); }}>
-                  <Trash2 size={13} /> Očisti prostor
-                </Btn>
-              </div>
-
-              <div className="absolute top-3 right-3 z-10 px-3 py-1.5 text-xs rounded-lg"
-                style={{ background: 'rgba(255,255,255,0.92)', border: `1px solid ${C.line}`, color: C.dim }}>
-                {measure ? 'klikni dvije tačke — udaljenost u mm · T ili Esc — izlaz'
-                  : walk ? 'W A S D / strelice — hodanje · povuci mišem — pogled · H ili Esc — izlaz'
-                    : tool !== 'select' ? `klikni na zid gdje je ${tool === 'voda' ? 'odvod za vodu' : 'utičnica'}`
-                      : view === '3d' ? 'klik odabire · povuci odabrani — pomjeranje uz zid · Delete briše · H — hodanje'
-                        : 'povuci element — pomjeranje uz zid · Delete briše'}
-              </div>
-
-              {measure && (
-                <div className="absolute bottom-14 left-1/2 z-20 px-4 py-2.5 rounded-xl text-sm"
-                  style={{ transform: 'translateX(-50%)', background: C.ink, color: '#fff' }}>
-                  {measured != null
-                    ? <>Izmjereno: <b style={{ ...mono }}>{measured} mm</b> · klikni za novo mjerenje</>
-                    : 'Klikni dvije tačke u prostoru'}
-                </div>
-              )}
-
-              <div className="absolute bottom-3 left-3 z-10 flex gap-2">
-                {[['radna ploča', `${(surf.wt.lengthMm / 1000).toFixed(2)} m`],
-                  ['obloga', `${(surf.wp.lengthMm / 1000).toFixed(2)} m`],
-                  ['coklo', `${(surf.sk.lengthMm / 1000).toFixed(2)} m`],
-                  ['maska', `${(surf.gm.lengthMm / 1000).toFixed(2)} m`],
-                  ['zav. maske', `${surf.zm.pieces.length}`]].map(([k, v]) => (
-                    <span key={k} className="px-2.5 py-1.5 text-xs rounded-lg"
-                      style={{ background: 'rgba(255,255,255,0.92)', border: `1px solid ${C.line}`, color: C.dim }}>
-                      {k} <b style={{ ...mono, color: C.text }}>{v}</b>
-                    </span>
-                  ))}
-              </div>
+              <ViewportControls 
+                view={view} setView={setView}
+                tool={tool} setTool={setTool}
+                showFronts={showFronts} toggleShowFronts={toggleShowFronts}
+                walk={walk} setWalk={setWalk}
+                measure={measure} setMeasure={setMeasure}
+                onNewProject={() => setWizard(true)}
+                onClearSpace={() => { setRawProject((p) => ({ ...p, elements: [], services: [] })); setSelectedId(null); setTool('select'); flash('Prostor očišćen.'); }}
+              />
+              
+              <ViewportInfo view={view} tool={tool} measure={measure} walk={walk} />
+              
+              {measure && <MeasurePanel measured={measured} onReset={() => setMeasured(null)} />}
+              
+              <SurfacesPanel surfaces={surf} />
 
               <div className="absolute inset-0">
                 {view === '2d'

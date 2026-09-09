@@ -1,5 +1,39 @@
-```javascript
-// No build artifacts, dependency directories, or temporary files detected in changes
-// Only source code files (.js) were added/modified
-// Current .gitignore is empty and no new ignores are needed
+```
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+target/
+
+# Cache directories
+.vite/
+.cache/
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Logs
+*.log
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
 ```
