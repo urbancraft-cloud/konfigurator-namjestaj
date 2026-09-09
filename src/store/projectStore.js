@@ -8,6 +8,7 @@ import { DEFAULT_PROJECT } from '../data/projectDefaults';
 import { normalizeProject } from '../utils/projectSchema';
 import { wallLength, snapCandidates, collidesWithAny } from '../engine/geometry';
 import { resolveProject, autoLayoutEngine } from '../engine/layout';
+import { getTemplateWithGuard, getDecorWithGuard, validateElement, createErrorResult, createSuccessResult, findElementWithGuard, validateProjectIntegrity } from './shared/storeUtils';
 
 /** Tolerancija snap-a na susjede (mm) — ista vrijednost koju koristi `applySnap`. */
 export const SNAP_TOLERANCE_MM = 40;
@@ -111,7 +112,13 @@ export const useProjectStore = create(withUndo((set, get) => ({
    */
   addElement: (templateId, wallId, widthMm, profileId) => {
     const { room, rawProject, setRawProject } = get();
-    const tpl = templateById(templateId);
+    
+    // Guard za template - sprječava crash ako template ne postoji
+    const tpl = getTemplateWithGuard(templateId);
+    if (tpl.templateId === 'UNKNOWN') {
+      return createErrorResult(`Template "${templateId}" nije pronađen u katalogu.`);
+    }
+    
     const wall = wallId || 'top';
     const len = wallLength(wall, room);
     const w = Math.max(tpl.dims.width.min, Math.min(tpl.dims.width.max,
@@ -124,11 +131,11 @@ export const useProjectStore = create(withUndo((set, get) => ({
       if (!collidesWithAny(probe, rawProject, room, probe.instanceId)) { found = x; break; }
     }
     if (found === null) {
-      return { ok: false, reason: `Nema slobodnog mjesta na zidu za element širine ${w} mm.` };
+      return createErrorResult(`Nema slobodnog mjesta na zidu za element širine ${w} mm.`);
     }
     probe.offset = found;
     setRawProject((p) => ({ ...p, elements: [...p.elements, probe] }));
-    return { ok: true, id: probe.instanceId };
+    return createSuccessResult({ id: probe.instanceId });
   },
 
   removeElement: (id) => {
@@ -156,8 +163,11 @@ export const useProjectStore = create(withUndo((set, get) => ({
     const { room } = get();
     const snap = !opts || opts.snap !== false;
     const p = get().rawProject;
-    const el = p.elements.find((e) => e.instanceId === id);
-    if (!el) return { ok: false, reason: 'Element nije pronađen.' };
+    
+    // Guard za pronalaženje elementa
+    const el = findElementWithGuard(p.elements, id);
+    if (!el) return createErrorResult('Element nije pronađen.');
+    
     const len = wallLength(el.wall, room);
     const rp = resolveProject(p, room);
     const clamp = (v) => Math.max(0, Math.min(len - el.dims.width, v));
@@ -189,13 +199,13 @@ export const useProjectStore = create(withUndo((set, get) => ({
         hit,
       };
     }
-    if (off === el.offset) return { ok: true, offset: off, unchanged: true };
+    if (off === el.offset) return createSuccessResult({ offset: off, unchanged: true });
     const next = { ...el, offset: off };
     get().setRawProjectCoalesced((pr) => ({
       ...pr,
       elements: pr.elements.map((e) => (e.instanceId === id ? next : e)),
     }));
-    return { ok: true, offset: off, snapped };
+    return createSuccessResult({ offset: off, snapped });
   },
 
   /**
